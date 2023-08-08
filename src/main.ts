@@ -11,6 +11,12 @@ async function bootstrap() {
     new FastifyAdapter(),
   );
 
+  process.on('SIGTERM', async () => {
+    await app.close();
+
+    process.exit(0);
+  });
+
   await app.listen(3000, '0.0.0.0');
 }
 
