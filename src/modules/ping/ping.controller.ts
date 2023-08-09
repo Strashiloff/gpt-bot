@@ -1,5 +1,5 @@
 import { HttpService } from '@nestjs/axios';
-import { Controller, Get, Logger, OnModuleInit } from '@nestjs/common';
+import { Controller, Get, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { firstValueFrom } from 'rxjs';
@@ -17,9 +17,9 @@ export class PingController {
   async pingHost() {
     const host = this.configService.get('BOT_HOST');
 
-    const responce = await firstValueFrom(this.httpService.get(`${host}/ping`));
+    await firstValueFrom(this.httpService.get(`${host}/ping`));
 
-    this.logger.log(`Ping success. Response: ${responce.data}`);
+    this.logger.log(`Ping success`);
   }
 
   @Get()
