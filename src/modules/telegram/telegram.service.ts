@@ -1,9 +1,10 @@
 import { Ctx, InjectBot, Mention, Message, On, Update } from 'nestjs-telegraf';
 import { GptService } from '../gpt/gpt.service';
 import { Context, Telegraf } from 'telegraf';
+import { OnApplicationShutdown } from '@nestjs/common';
 
 @Update()
-export class TelegramService {
+export class TelegramService implements OnApplicationShutdown {
   constructor(
     @InjectBot()
     private readonly bot: Telegraf<Context>,
@@ -61,6 +62,10 @@ export class TelegramService {
 
       return;
     }
+  }
+
+  onApplicationShutdown(signal?: string) {
+    this.bot.stop(`Terminated by signal ${signal}`);
   }
 
   private editMessageText({

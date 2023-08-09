@@ -1,6 +1,8 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TelegramModule } from '../telegram/telegram.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { PingModule } from '../ping/ping.module';
 
 @Global()
 @Module({
@@ -9,6 +11,8 @@ import { TelegramModule } from '../telegram/telegram.module';
       isGlobal: true,
     }),
     TelegramModule,
+    ScheduleModule.forRoot(),
+    PingModule,
   ],
 })
 export class AppModule {}
