@@ -8,8 +8,19 @@ import { GptModule } from '../gpt/gpt.module';
   imports: [
     TelegrafModule.forRootAsync({
       useFactory: (config: ConfigService) => {
+        const defaultHandlerTimeout = 5 * 60 * 1000; // 5 minutes
+        const handlerTimeout = +config.get(
+          'TELEGRAM_HANDLER_TIMEOUT',
+          defaultHandlerTimeout,
+        );
+
         return {
           token: config.get('TELEGRAM_BOT_TOKEN'),
+          options: {
+            handlerTimeout: Number.isNaN(handlerTimeout)
+              ? defaultHandlerTimeout
+              : handlerTimeout,
+          },
         };
       },
       inject: [ConfigService],
