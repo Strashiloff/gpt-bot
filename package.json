@@ -28,6 +28,7 @@
     "@nestjs/platform-fastify": "^10.1.2",
     "@nestjs/schedule": "^3.0.2",
     "@nestjs/swagger": "^7.1.4",
+    "@nestjs/terminus": "^10.0.1",
     "axios": "^1.4.0",
     "nestjs-telegraf": "2.7.0",
     "openai": "3.3.0",
