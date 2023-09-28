@@ -3,6 +3,8 @@ import { TelegramService } from './telegram.service';
 import { ConfigService } from '@nestjs/config';
 import { TelegrafModule } from 'nestjs-telegraf';
 import { GptModule } from '../gpt/gpt.module';
+import { HistoryService } from './history/history.service';
+import { HISTORY_SERVICE_TOKEN } from './history/IHistoryService';
 
 @Module({
   imports: [
@@ -34,6 +36,12 @@ import { GptModule } from '../gpt/gpt.module';
       inject: [ConfigService],
     }),
   ],
-  providers: [TelegramService],
+  providers: [
+    TelegramService,
+    {
+      provide: HISTORY_SERVICE_TOKEN,
+      useClass: HistoryService,
+    },
+  ],
 })
 export class TelegramModule {}
