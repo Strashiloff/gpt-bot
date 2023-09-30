@@ -1,7 +1,10 @@
+import { ChatCompletionRequestMessageRoleEnum } from 'openai';
+
 export type HistoryRecord = {
   chatId: number;
   message: string;
   date: Date;
+  role: ChatCompletionRequestMessageRoleEnum;
 };
 
 export type HistoryCreateRecord = Omit<HistoryRecord, 'chatId'>;

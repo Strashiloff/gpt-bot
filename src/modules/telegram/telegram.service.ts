@@ -22,6 +22,7 @@ import {
   IHistoryService,
 } from './history/IHistoryService';
 import { ConfigService } from '@nestjs/config';
+import { ChatCompletionRequestMessage } from 'openai';
 
 @Update()
 export class TelegramService implements OnApplicationShutdown {
@@ -48,14 +49,36 @@ export class TelegramService implements OnApplicationShutdown {
 
   @Command('clear')
   async clearHistory(@Ctx() context: Context) {
+    const history = this.historyService.get(context.chat.id);
+
+    if (!history.length) {
+      await context.sendChatAction('typing');
+      await context.reply('История пуста');
+
+      return;
+    }
+
     this.historyService.clear(context.chat.id);
 
-    await this.generateResponse(TELEGRAM_CLEAN_HISTORY, context);
+    await this.generateResponse(
+      {
+        content: TELEGRAM_CLEAN_HISTORY,
+        role: 'user',
+      },
+      context,
+    );
   }
 
   async onMention(message: string, context: Context) {
     if (context.chat.type !== 'private') {
-      return this.processMessage(message, context);
+      return this.processMessage(
+        {
+          message,
+          role: 'user',
+          date: new Date(context.message.date),
+        },
+        context,
+      );
     }
   }
 
@@ -63,15 +86,30 @@ export class TelegramService implements OnApplicationShutdown {
   async onMessage(@Message('text') message: string, @Ctx() context: Context) {
     const reply: Context['message'] | undefined =
       context.message['reply_to_message'];
+    const userMessage: HistoryCreateRecord = {
+      message,
+      role: 'user',
+      date: new Date(context.message.date),
+    };
 
     if (reply) {
       if (this.botNames.includes(reply.from.username)) {
-        return this.processMessage([message, reply['text']], context);
+        return this.processMessage(
+          [
+            userMessage,
+            {
+              message: reply['text'],
+              role: 'system',
+              date: new Date(reply.date),
+            },
+          ],
+          context,
+        );
       }
     }
 
     if (context.chat.type === 'private') {
-      return this.processMessage(message, context);
+      return this.processMessage(userMessage, context);
     }
   }
 
@@ -79,27 +117,27 @@ export class TelegramService implements OnApplicationShutdown {
     this.bot.stop(`Terminated by signal ${signal}`);
   }
 
-  private async processMessage(message: string | string[], context: Context) {
+  private async processMessage(
+    message: HistoryCreateRecord | HistoryCreateRecord[],
+    context: Context,
+  ) {
     await context.sendChatAction('typing');
 
     const messages = Array.isArray(message) ? message : [message];
-    const messageRecords: HistoryCreateRecord[] = messages.map((m) => ({
-      message: m,
-      date: new Date(context.message.date),
-    }));
-    const chatHistory = this.historyService.add(
-      context.chat.id,
-      ...messageRecords,
-    );
+    const chatHistory = this.historyService.add(context.chat.id, ...messages);
 
     try {
       const responseMessage = await this.generateResponse(
-        chatHistory.map(({ message }) => message),
+        chatHistory.map((record) => ({
+          content: record.message,
+          role: record.role,
+        })),
         context,
       );
       this.historyService.add(context.chat.id, {
         message: responseMessage,
         date: new Date(),
+        role: 'system',
       });
     } catch (e) {
       this.logger.error(e.message ?? e, e.stack, e.context);
@@ -109,7 +147,10 @@ export class TelegramService implements OnApplicationShutdown {
     }
   }
 
-  private async generateResponse(message: string | string[], context: Context) {
+  private async generateResponse(
+    message: ChatCompletionRequestMessage | ChatCompletionRequestMessage[],
+    context: Context,
+  ) {
     const response = await this.gptService.sendMessage(message);
     const responseText = response.join('\n');
 
